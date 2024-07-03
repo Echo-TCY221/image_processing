@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片处理系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/toastr.min.css') }}">
+    <style>
+        /* 自定义样式 */
+        .img-thumbnail {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+    <meta name="csrf-token" content="{{ csrf_token() }}">  <!-- CSRF 令牌 meta 标签 -->
+    <script src="{{ url_for('static', filename='js/jquery-3.5.1.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+</head>
+<body>
+    {% block content %}{% endblock %}
+    <script src="{{ url_for('static', filename='js/toastr.min.js') }}"></script>
+    <script>
+        $(document).ready(function() {
+            {% if get_flashed_messages() %}
+                {% for message in get_flashed_messages() %}
+                    toastr.info('{{ message }}');
+                {% endfor %}
+            {% endif %}
+
+            function filterOptions(searchInputId, selectId) {
+                const searchInput = document.getElementById(searchInputId);
+                const selectElement = document.getElementById(selectId);
+                const options = selectElement.querySelectorAll('option');
+
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = searchInput.value.toLowerCase();
+                    options.forEach(option => {
+                        const text = option.textContent.toLowerCase();
+                        option.style.display = text.includes(searchTerm) ? 'block' : 'none';
+                    });
+                });
+            }
+
+            filterOptions('head_image_search', 'head_image');
+            filterOptions('main_image_search', 'main_image');
+
+            document.getElementById('combine-form').addEventListener('submit', function(event) {
+                event.preventDefault();  // 阻止表单的默认提交
+                const formData = new FormData(this);
+
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')  // 确保 CSRF 令牌传递
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        toastr.success(data.message);
+                    } else {
+                        toastr.error(data.message);
+                    }
+                })
+                .catch(error => {
+                    toastr.error('发生错误，请重试。');
+                    console.error('Error:', error);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-5">
+            <h3 class="text-center mb-3">上传头图框</h3>
+            <form action="{{ url_for('upload_head') }}" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <input type="file" name="file" multiple class="form-control-file">
+                    <button type="submit" class="btn btn-primary mt-3">上传</button>
+                </div>
+            </form>
+            <div class="head-images mt-4" style="height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                <h5 class="text-center">头图框</h5>
+                {% for image in head_images %}
+                <div class="d-flex align-items-center border-bottom py-2 px-3">
+                    <img src="{{ url_for('static', filename='head_images/' ~ image) }}" width="80" height="80" class="img-thumbnail">
+                    <span class="ml-3">{{ image }}</span>
+                    <a href="{{ url_for('delete_image', folder='head', filename=image) }}" class="ml-auto btn btn-danger btn-sm">删除</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-md-5 offset-md-1">
+            <h3 class="text-center mb-3">上传主图像</h3>
+            <form action="{{ url_for('upload_main') }}" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <input type="file" name="file" multiple class="form-control-file">
+                    <button type="submit" class="btn btn-primary mt-3">上传</button>
+                </div>
+            </form>
+            <div class="main-images mt-4" style="height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                <h5 class="text-center">主图像</h5>
+                {% for image in main_images %}
+                <div class="d-flex align-items-center border-bottom py-2 px-3">
+                    <img src="{{ url_for('static', filename='main_images/' ~ image) }}" width="80" height="80" class="img-thumbnail">
+                    <span class="ml-3">{{ image }}</span>
+                    <a href="{{ url_for('delete_image', folder='main', filename=image) }}" class="ml-auto btn btn-danger btn-sm">删除</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-md-12 text-center">
+            <h3 class="mb-4">合成图像</h3>
+            <form id="combine-form" action="{{ url_for('combine') }}" method="post">
+                <div class="form-group">
+                    <label for="head_image">选择头图框：</label>
+                    <input type="text" id="head_image_search" class="form-control mb-2" placeholder="搜索头图框">
+                    <select name="head_image" id="head_image" class="form-control">
+                        {% for image in head_images %}
+                        <option value="{{ image }}">{{ image }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="main_image">选择主图像：</label>
+                    <input type="text" id="main_image_search" class="form-control mb-2" placeholder="搜索主图像">
+                    <select name="main_image" id="main_image" class="form-control">
+                        {% for image in main_images %}
+                        <option value="{{ image }}">{{ image }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success">合成</button>
+            </form>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-md-12 text-center">
+            <a href="{{ url_for('download') }}" class="btn btn-info">前往下载页面</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterOptions(searchInputId, selectId) {
+        const searchInput = document.getElementById(searchInputId);
+        const selectElement = document.getElementById(selectId);
+        const options = selectElement.querySelectorAll('option');
+
+        searchInput.addEventListener('input', function() {
+            const searchTerm = searchInput.value.toLowerCase();
+            options.forEach(option => {
+                const text = option.textContent.toLowerCase();
+                option.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        });
+    }
+
+    filterOptions('head_image_search', 'head_image');
+    filterOptions('main_image_search', 'main_image');
+
+    document.getElementById('combine-form').addEventListener('submit', function(event) {
+        event.preventDefault();  // 阻止表单的默认提交
+        const formData = new FormData(this);
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')  // 确保 CSRF 令牌传递
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                toastr.success(data.message);
+            } else {
+                toastr.error(data.message);
+            }
+        })
+        .catch(error => {
+            toastr.error('发生错误，请重试。');
+            console.error('Error:', error);
+        });
+    });
+</script>
+{% endblock %}
